@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Broiler Farm Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* CSS Variables for Dynamic Themes */
+    :root {
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --primary-color: #2d6a4f;
+      --primary-hover: #1b4332;
+      --stat-bg: #e8f5e9;
+      --base-font-size: 16px;
+    }
+
+    /* Theme Classes */
+    body.theme-dark {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #e0e0e0;
+      --primary-color: #4caf50;
+      --primary-hover: #388e3c;
+      --stat-bg: #2e3b2f;
+    }
+
+    body.theme-ocean {
+      --bg-color: #eef4f8;
+      --card-bg: #ffffff;
+      --text-color: #1c2d37;
+      --primary-color: #0077b6;
+      --primary-hover: #023e8a;
+      --stat-bg: #e0f2fe;
+    }
+
+    body.theme-sunset {
+      --bg-color: #fff8f0;
+      --card-bg: #ffffff;
+      --text-color: #3d2c2e;
+      --primary-color: #d90429;
+      --primary-hover: #ef233c;
+      --stat-bg: #ffe5ec;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: var(--bg-color); 
+      margin: 0; 
+      padding: 16px; 
+      color: var(--text-color);
+      font-size: var(--base-font-size);
+    }
+
+    /* Profile Section Header */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .avatar-img {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary-color);
+      background: #ccc;
+    }
+
+    h1, h2 { text-align: center; color: var(--primary-color); margin-bottom: 12px; margin-top: 0; }
+    .card { background: var(--card-bg); padding: 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    label { font-weight: bold; display: block; margin-top: 10px; font-size: 0.85em; }
+    input, select, button { width: 100%; padding: 12px; margin-top: 4px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; font-size: 1em; background: var(--card-bg); color: var(--text-color); }
+    button { background: var(--primary-color); color: white; border: none; font-weight: bold; margin-top: 14px; cursor: pointer; }
+    button.secondary { opacity: 0.9; }
+    button.export { background: #1d3557; color: white; }
+    button:active { opacity: 0.8; }
+    
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+    .stat-box { background: var(--stat-bg); padding: 10px; border-radius: 8px; }
+    .stat-number { font-size: 1.2em; font-weight: bold; color: var(--primary-color); margin-top: 4px; }
+    .sub-text { font-size: 0.75em; opacity: 0.8; margin-top: 2px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header with Avatar -->
+  <div class="profile-header">
+    <img id="avatarDisplay" class="avatar-img" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23666'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>" alt="Profile Picture">
+    <h1>Broiler Tracker</h1>
+  </div>
+
+  <!-- Dashboard Summary -->
+  <div class="card">
+    <h2>Flock Summary</h2>
+    <div class="stat-grid">
+      <div class="stat-box"><div>Live Birds</div><div class="stat-number" id="liveBirds">0</div></div>
+      <div class="stat-box"><div>Mortality</div><div class="stat-number" id="mortalityRate">0%</div></div>
+      <div class="stat-box"><div>Total Feed</div><div class="stat-number" id="totalFeed">0 kg</div></div>
+      <div class="stat-box"><div>Total Cost</div><div class="stat-number" id="totalCost">0</div></div>
+      <div class="stat-box"><div>Estimated FCR</div><div class="stat-number" id="fcrVal">0.00</div><div class="sub-text">Feed (kg) / Weight (kg)</div></div>
+      <div class="stat-box"><div>Net Profit</div><div class="stat-number" id="netProfit">0</div></div>
+    </div>
+    <button class="export" onclick="exportToCSV()">Export Data to CSV (Excel)</button>
+  </div>
+
+  <!-- App Customization & Settings -->
+  <div class="card">
+    <h2>App Settings</h2>
+    
+    <label>Profile Picture</label>
+    <input type="file" id="avatarInput" accept="image/*" onchange="updateProfilePic(event)">
+
+    <label>App Theme</label>
+    <select id="themeSelect" onchange="changeTheme(this.value)">
+      <option value="forest">Forest Green (Default)</option>
+      <option value="dark">Dark Mode</option>
+      <option value="ocean">Ocean Blue</option>
+      <option value="sunset">Warm Sunset</option>
+    </select>
+
+    <label>Font Size</label>
+    <select id="fontSizeSelect" onchange="changeFontSize(this.value)">
+      <option value="14px">Small</option>
+      <option value="16px" selected>Medium (Default)</option>
+      <option value="18px">Large</option>
+      <option value="20px">Extra Large</option>
+    </select>
+  </div>
+
+  <!-- Start New Batch -->
+  <div class="card">
+    <h2>Start New Batch</h2>
+    <label>Chicks Arrived</label>
+    <input type="number" id="initChicks" placeholder="e.g. 500">
+    <label>Chick Cost</label>
+    <input type="number" id="initCost" placeholder="e.g. 40000">
+    <button onclick="startBatch()">Initialize Batch</button>
+  </div>
+
+  <!-- Daily Log Entry -->
+  <div class="card">
+    <h2>Log Daily Record</h2>
+    <label>Mortality Today</label>
+    <input type="number" id="dailyMortality" value="0">
+    <label>Feed Intake Today (kg)</label>
+    <input type="number" id="dailyFeed" value="0">
+    <label>Feed Expense Today</label>
+    <input type="number" id="feedExpense" value="0">
+    <button class="secondary" onclick="addLog()">Save Daily Entry</button>
+  </div>
+
+  <!-- Sales Entry -->
+  <div class="card">
+    <h2>Log Harvest & Sales</h2>
+    <label>Birds Sold</label>
+    <input type="number" id="soldCount" placeholder="e.g. 100">
+    <label>Total Live Weight Sold (kg)</label>
+    <input type="number" id="soldWeight" placeholder="e.g. 150">
+    <label>Total Revenue Received</label>
+    <input type="number" id="salesRevenue" placeholder="e.g. 45000">
+    <button class="secondary" onclick="addSale()">Save Sale Record</button>
+  </div>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem('broilerData')) || { initialChicks: 0, initialCost: 0, logs: [], sales: [] };
+    let settings = JSON.parse(localStorage.getItem('broilerSettings')) || { theme: 'forest', fontSize: '16px', avatar: '' };
+
+    function applySettings() {
+      // Apply theme
+      document.body.className = '';
+      if (settings.theme !== 'forest') {
+        document.body.classList.add('theme-' + settings.theme);
+      }
+      document.getElementById('themeSelect').value = settings.theme;
+
+      // Apply font size
+      document.documentElement.style.setProperty('--base-font-size', settings.fontSize);
+      document.getElementById('fontSizeSelect').value = settings.fontSize;
+
+      // Apply profile picture
+      if (settings.avatar) {
+        document.getElementById('avatarDisplay').src = settings.avatar;
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem('broilerSettings', JSON.stringify(settings));
+    }
+
+    function changeTheme(newTheme) {
+      settings.theme = newTheme;
+      saveSettings();
+      applySettings();
+    }
+
+    function changeFontSize(newSize) {
+      settings.fontSize = newSize;
+      saveSettings();
+      applySettings();
+    }
+
+    function updateProfilePic(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          settings.avatar = e.target.result;
+          saveSettings();
+          applySettings();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('broilerData', JSON.stringify(data));
+      updateUI();
+    }
+
+    function startBatch() {
+      if (!confirm("Starting a new batch will reset current totals. Proceed?")) return;
+      data.initialChicks = parseInt(document.getElementById('initChicks').value) || 0;
+      data.initialCost = parseFloat(document.getElementById('initCost').value) || 0;
+      data.logs = [];
+      data.sales = [];
+      saveData();
+    }
+
+    function addLog() {
+      const mortality = parseInt(document.getElementById('dailyMortality').value) || 0;
+      const feed = parseFloat(document.getElementById('dailyFeed').value) || 0;
+      const cost = parseFloat(document.getElementById('feedExpense').value) || 0;
+      
+      data.logs.push({ date: new Date().toLocaleDateString(), mortality, feed, cost });
+      document.getElementById('dailyMortality').value = "0";
+      document.getElementById('dailyFeed').value = "0";
+      document.getElementById('feedExpense').value = "0";
+      saveData();
+    }
+
+    function addSale() {
+      const count = parseInt(document.getElementById('soldCount').value) || 0;
+      const weight = parseFloat(document.getElementById('soldWeight').value) || 0;
+      const revenue = parseFloat(document.getElementById('salesRevenue').value) || 0;
+      
+      data.sales.push({ date: new Date().toLocaleDateString(), count, weight, revenue });
+      document.getElementById('soldCount').value = "";
+      document.getElementById('soldWeight').value = "";
+      document.getElementById('salesRevenue').value = "";
+      saveData();
+    }
+
+    function updateUI() {
+      const totalMortality = data.logs.reduce((sum, item) => sum + item.mortality, 0);
+      const totalSold = data.sales.reduce((sum, item) => sum + item.count, 0);
+      const totalWeightSold = data.sales.reduce((sum, item) => sum + item.weight, 0);
+      const totalRevenue = data.sales.reduce((sum, item) => sum + item.revenue, 0);
+      
+      const live = data.initialChicks - totalMortality - totalSold;
+      const totalFeed = data.logs.reduce((sum, item) => sum + item.feed, 0);
+      const totalFeedCost = data.logs.reduce((sum, item) => sum + item.cost, 0);
+      const grandCost = data.initialCost + totalFeedCost;
+      const profit = totalRevenue - grandCost;
+
+      const mortRate = data.initialChicks > 0 ? ((totalMortality / data.initialChicks) * 100).toFixed(1) : 0;
+      const fcr = totalWeightSold > 0 ? (totalFeed / totalWeightSold).toFixed(2) : "N/A";
+
+      document.getElementById('liveBirds').innerText = live;
+      document.getElementById('mortalityRate').innerText = mortRate + '%';
+      document.getElementById('totalFeed').innerText = totalFeed + ' kg';
+      document.getElementById('totalCost').innerText = grandCost.toLocaleString();
+      document.getElementById('fcrVal').innerText = fcr;
+      document.getElementById('netProfit').innerText = profit.toLocaleString();
+    }
+
+    function exportToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Type,Date,Mortality,Feed (kg),Feed Expense,Sold Count,Sold Weight (kg),Revenue\n";
+      csvContent += `Initial Batch,${new Date().toLocaleDateString()},0,0,${data.initialCost},${data.initialChicks},0,0\n`;
+      
+      data.logs.forEach(l => {
+        csvContent += `Daily Log,${l.date},${l.mortality},${l.feed},${l.cost},0,0,0\n`;
+      });
+      
+      data.sales.forEach(s => {
+        csvContent += `Sale Record,${s.date},0,0,0,${s.count},${s.weight},${s.revenue}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `broiler_farm_data_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Initialize UI and user settings on page load
+    applySettings();
+    updateUI();
+  </script>
+</body>
+</html>
